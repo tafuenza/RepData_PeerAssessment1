@@ -1,25 +1,114 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
-  html_document:
-    keep_md: true
+title: "Week 2 Assignment"
+author: "Tomás"
+date: "18 de febrero de 2020"
+output: html_document
 ---
 
-
-## Loading and preprocessing the data
-
-
-
-## What is mean total number of steps taken per day?
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(fig.path = "./figures/")
+```
 
 
+#Assignment Week 2
 
-## What is the average daily activity pattern?
+##Loading and preprocessing the data
+
+```{r results='hide', error = FALSE, warning=FALSE, message=FALSE}
+library(lubridate)
+library(lattice)
+library(chron)
+library(tidyr)
+library(ggplot2)
+library(dplyr)
+```
+
+Open the Activity File and transform date in to a "Date format"
+
+```{r}
+data <- read.csv("activity.csv") ; data$date <- ymd(data$date)
+head(data)
+```
+
+##What is mean total number of steps taken per day?
+
+```{r}
+data2 <- na.omit(data)
+aux <- split(data2[,1], data$date) #Split by day
+stepsperday <- sapply(aux, sum)
+barplot(stepsperday, names.arg = unique(data$date), main = "Steps per day",
+        xlab = "Days", ylab = "Steps", col = "darkgreen" )
+avgstepsperday <- sapply(aux,mean) ;  avgstepsperday #Mean day
+medianstepsperday <- sapply(aux,median); medianstepsperday #Median day
+```
+
+##What is the average daily activity pattern?
+
+```{r}
+aux1 <- split(data2[,1], unique(data$interval))
+avgstepperinterval <- sapply(aux1,mean, na.rm = TRUE)
+plot(unique(data$interval), avgstepperinterval, type = "l", main = "Time series plot of the average number of steps taken",
+     xlab = "Interval", ylab = "Steps")
+```
+
+###Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+max1 <- sapply(aux1, mean)
+which.max(as.integer(max1))
+names(aux1[which.max(as.integer(max1))])
+```
+
+##Imputing missing values
 
 
+### Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+```{r}
+sum(is.na(data))
+```
 
-## Imputing missing values
+###Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+The missing value are change with mean of the all observations
+```{r}
+cM <- mean(data[,1], na.rm=TRUE)
+indx <- which(is.na(data), arr.ind=TRUE)
+data[indx] <- cM[indx[,2]]
+head(data)
+```
+
+###Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+```{r}
+data <- read.csv("activity.csv") ; data$date <- ymd(data$date) ; data <- na.omit(data)
+aux <- split(data[,1], data$date) #Split by day
+stepsperday <- sapply(aux, sum)
+barplot(stepsperday, names.arg = unique(data$date), main = "Steps per day",
+        xlab = "Days", ylab = "Steps", col = "darkgreen" )
+avgstepsperday <- sapply(aux,mean) ;  avgstepsperday #Mean day
+medianstepsperday <- sapply(aux,median); medianstepsperday #Median day
+```
+
+###Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day
+
+```{r}
+data$isweekend <- is.weekend(data$date)
+data[,4] <- as.numeric(data[,4])
+data$isweekend[data$isweekend == 0] <- "Weekday" ; data$isweekend[data$isweekend == 1] <- "Weekend"
+head(data)
+```
+###Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). The plot should look something like the following, which was created using simulated data:
+
+```{r}
+aux3 <- split(data[,1], list(data$isweekend, data$interval))
+aux4 <- sapply(aux3, mean)
+data2 <- data.frame("days" = names(aux3), "steps" = aux4, row.names = NULL)
+data2 <- data2 %>% separate(days, c("isweekend", "interval"))
+data2$isweekend <- as.factor(data2$isweekend)
+g <- qplot(as.numeric(data2$interval), data2$steps, data = data2, facets = .~isweekend, na.rm = TRUE, type = "l")
+g + scale_x_continuous(breaks = seq(0, 2355, by =250)) +
+labs(title = "Average steps per interval", x = "Interval", y = "Steps") +  geom_line(linetype = "solid")
+```
 
 
-
-## Are there differences in activity patterns between weekdays and weekends?
