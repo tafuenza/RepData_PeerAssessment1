@@ -36,18 +36,17 @@ head(data)
 ##What is mean total number of steps taken per day?
 
 ```{r}
-data2 <- na.omit(data)
-aux <- split(data2[,1], data$date) #Split by day
-stepsperday <- sapply(aux, sum)
-barplot(stepsperday, names.arg = unique(data$date), main = "Steps per day",
-        xlab = "Days", ylab = "Steps", col = "darkgreen" )
-avgstepsperday <- sapply(aux,mean) ;  avgstepsperday #Mean day
-medianstepsperday <- sapply(aux,median); medianstepsperday #Median day
+data <- na.omit(data)
+stepsperday <- tapply(data$steps,data$date,sum, na.rm = TRUE)
+hist(stepsperday, breaks = 53)
+meanstepsperday <- mean(stepsperday); meanstepsperday
+medianstepsperdat <- median(stepsperday); medianstepsperdat
 ```
 
 ##What is the average daily activity pattern?
 
 ```{r}
+data2 <- na.omit(data)
 aux1 <- split(data2[,1], unique(data$interval))
 avgstepperinterval <- sapply(aux1,mean, na.rm = TRUE)
 plot(unique(data$interval), avgstepperinterval, type = "l", main = "Time series plot of the average number of steps taken",
@@ -74,23 +73,25 @@ sum(is.na(data))
 
 The missing value are change with mean of the all observations
 ```{r}
-cM <- mean(data[,1], na.rm=TRUE)
-indx <- which(is.na(data), arr.ind=TRUE)
-data[indx] <- cM[indx[,2]]
-head(data)
+data <- read.csv("activity.csv")
+stepsperday_aux <- tapply(data$steps,data$date,sum, na.rm = TRUE)
+data$aux <- stepsperday_aux[match(data$date, names(stepsperday_aux))]
+data$steps <- coalesce(data$steps,data$aux)
+stepsperday_mean <- tapply(data$steps,data$date,sum, na.rm = TRUE)
 ```
+
 
 ###Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
 
 ```{r}
-data <- read.csv("activity.csv") ; data$date <- ymd(data$date) ; data <- na.omit(data)
-aux <- split(data[,1], data$date) #Split by day
-stepsperday <- sapply(aux, sum)
-barplot(stepsperday, names.arg = unique(data$date), main = "Steps per day",
-        xlab = "Days", ylab = "Steps", col = "darkgreen" )
-avgstepsperday <- sapply(aux,mean) ;  avgstepsperday #Mean day
-medianstepsperday <- sapply(aux,median); medianstepsperday #Median day
+par(mfrow = c(1,2), mar = c(4,4,2,1))
+hist(stepsperday_mean, breaks = 61)
+hist(stepsperday, breaks = 53)
+meanstepsperday_mean <- mean(stepsperday_mean); meanstepsperday_mean; meanstepsperday
+medianstepsperdat_median <- median(stepsperday_mean); medianstepsperdat_median ; medianstepsperdat
 ```
+
+The histogram, the mean and the median are different since I enter values where there were none and the calculation of these differs since in this case there are full days that have no observations, so by adding the average of these days that is 0 , I am simply dividing the number of total steps into more days. So it is totally different
 
 ###Create a new factor variable in the dataset with two levels -- "weekday" and "weekend" indicating whether a given date is a weekday or weekend day
 
